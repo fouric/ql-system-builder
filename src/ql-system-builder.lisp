@@ -1,5 +1,10 @@
 (in-package #:ql-system-builder)
 
+(defun draw (system-name-buffer)
+  (f:clear-window)
+  (f:write-string-at (format nil "system name: ~a" system-name-buffer) 1 1)
+  (f:refresh-window))
+
 (defun main-loop (system-name-buffer)
   ;; what we want is several fields: system name,
   ;; option: symlink to local-projects/put in local-projects/change environment variable to point to project/none
@@ -13,10 +18,8 @@
   (f:update-swank)
   (f:update-charms-dimensions)
 
-  ;; TODO: move draw code into separate function so we can initial paint without input
   (let* ((input (f:get-char)))
     (when input
-      (f:clear-window)
       (when (eq 'quit
                 (cond
                   ((char= input #\newline)
@@ -28,10 +31,10 @@
                   ((<= (char-code #\space) (char-code input) (char-code #\tilde))
                    (setf system-name-buffer (concatenate 'string system-name-buffer (coerce (list input) 'string))))))
         (return-from main-loop system-name-buffer))
-      (f:write-string-at (format nil "system name: ~a" system-name-buffer) 1 1)
-      (f:refresh-window))
+      (draw system-name-buffer))
     (main-loop system-name-buffer)))
 
 (defun launch ()
   (f:with-charms (:timeout 100 :raw-input t :interpret-control-characters t)
+    (draw "")
     (main-loop "")))
