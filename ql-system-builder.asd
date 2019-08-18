@@ -18,4 +18,4 @@
   :components ((:file "package")
                (:file "ql-system-builder"))
 
-  :depends-on (:cl-charms :alexandria :fouric))
+  :depends-on (:cl-charms :alexandria :fouric :trivial-shell))

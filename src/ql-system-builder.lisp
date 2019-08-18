@@ -6,7 +6,12 @@
   (f:refresh-window))
 
 (defun create-system (containing-directory name)
-  (format t "creating system named ~s in directory ~s~%" name containing-directory))
+  (ensure-directories-exist (concatenate 'string (namestring containing-directory) "/" (namestring name) "/")))
+
+(defun test-create-system ()
+  (trivial-shell:shell-command "rm -rf /home/fouric/ramdisk/test-system")
+  (create-system "/home/fouric/ramdisk" "test-system")
+  (format t "files in ~a: ~s~%" "/home/fouric/ramdisk/test-system/" (uiop:directory-files "/home/fouric/ramdisk/test-system/")))
 
 (defun main-loop (system-name-buffer current-directory)
   ;; what we want is several fields: system name,
@@ -43,4 +48,8 @@
     (main-loop "" current-directory)))
 
 (defun dev-launch ()
-  (launch "/home/fouric/ramdisk/"))
+  (f:emacs-eval '(slime-enable-concurrent-hints))
+  (trivial-shell:shell-command "rm -rf /home/fouric/ramdisk/test-system")
+  (f:with-charms (:timeout 100 :raw-input t :interpret-control-characters t)
+    (draw "test-system")
+    (main-loop "test-system" "/home/fouric/ramdisk/")))
