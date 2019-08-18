@@ -1,0 +1,17 @@
+(defun emacsclient-eval (command)
+  (funcall (intern "SHELL-COMMAND" :trivial-shell) (format nil "emacsclient --eval \"~a\"" command)))
+
+(defun ql-system-builder-dev ()
+  ;; thanks http://turtleware.eu/posts/cl-charms-crash-course.html
+  (defvar *console-io* *terminal-io*)
+  (asdf:load-system :swank)
+  (funcall (intern "CREATE-SERVER" :swank) :port 4005 :dont-close t)
+  (funcall (intern "QUICKLOAD" :ql) '(:ql-system-builder) :silent t)
+  (emacsclient-eval (format nil "(find-file \\\"~a\\\")" (namestring (asdf:system-relative-pathname :ql-system-builder "src/ql-system-builder.lisp"))))
+  (emacsclient-eval "(slime-connect \\\"localhost\\\" 4005)")
+  (sleep .5)
+  (emacsclient-eval "(funcall 'slime-repl-eval-string \\\"(in-package :ql-system-builder)\\\")")
+  (sleep .5)
+  (emacsclient-eval "(funcall 'slime-repl-eval-string \\\"(launch)\\\")")
+  (loop (sleep 1)))
+(ql-system-builder-dev)

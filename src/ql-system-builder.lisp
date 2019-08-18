@@ -4,12 +4,10 @@
 (defparameter *screen-width* 1)
 (defparameter *screen-height* 1)
 
-(defun clamp (val min max)
-  (max (min val max) min))
 (defun clamp-w (x)
-  (clamp x 0 *screen-width*))
+  (a:clamp x 0 *screen-width*))
 (defun clamp-h (y)
-  (clamp y 0 *screen-height*))
+  (a:clamp y 0 *screen-height*))
 
 (defmacro defcolors (&rest colors)
   `(progn
