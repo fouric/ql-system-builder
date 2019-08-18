@@ -5,7 +5,10 @@
   (f:write-string-at (format nil "system name: ~a" system-name-buffer) 1 1)
   (f:refresh-window))
 
-(defun main-loop (system-name-buffer)
+(defun create-system (containing-directory name)
+  (format t "creating system named ~s in directory ~s~%" name containing-directory))
+
+(defun main-loop (system-name-buffer current-directory)
   ;; what we want is several fields: system name,
   ;; option: symlink to local-projects/put in local-projects/change environment variable to point to project/none
   ;; specify system name, package name should default to system name, ASD package name default should be based on system name
@@ -23,7 +26,7 @@
       (when (eq 'quit
                 (cond
                   ((char= input #\newline)
-                   (format t "creating system with name ~s~%" system-name-buffer)
+                   (create-system current-directory system-name-buffer)
                    'quit)
                   ((char= input #\rubout)
                    (when (plusp (length system-name-buffer))
@@ -32,9 +35,12 @@
                    (setf system-name-buffer (concatenate 'string system-name-buffer (coerce (list input) 'string))))))
         (return-from main-loop system-name-buffer))
       (draw system-name-buffer))
-    (main-loop system-name-buffer)))
+    (main-loop system-name-buffer current-directory)))
 
-(defun launch ()
+(defun launch (&optional current-directory)
   (f:with-charms (:timeout 100 :raw-input t :interpret-control-characters t)
     (draw "")
-    (main-loop "")))
+    (main-loop "" current-directory)))
+
+(defun dev-launch ()
+  (launch "/home/fouric/ramdisk/"))
