@@ -5,13 +5,29 @@
   (f:write-string-at (format nil "system name: ~a" system-name-buffer) 1 1)
   (f:refresh-window))
 
+(defun cat (&rest strings)
+  (apply #'concatenate 'string strings))
+
+(defun gitignore (project-directory)
+  (f:write-lines (cat project-directory "/.gitignore") '("*.fasl" "*.elf")))
+
 (defun create-system (containing-directory name)
-  (ensure-directories-exist (concatenate 'string (namestring containing-directory) "/" (namestring name) "/")))
+  (let ((our-directory (cat (namestring containing-directory) "/" (namestring name) "/")))
+    (ensure-directories-exist our-directory)
+    (gitignore our-directory)))
+
+(defun delete-test-system (location)
+  (shell-command (format nil "rm -rf ~a" location)))
 
 (defun test-create-system ()
-  (shell-command (format nil "rm -rf ~a/ramdisk/test-system" (namestring (user-homedir-pathname))))
-  (create-system (format nil "~a/ramdisk" (namestring (user-homedir-pathname))) "test-system")
-  (format t "files in ~a~a: ~s~%" (namestring (user-homedir-pathname)) "/ramdisk/test-system/" (uiop:directory-files (format nil "~a/ramdisk/test-system/" (namestring (user-homedir-pathname))))))
+  (let* ((homedir (namestring (user-homedir-pathname)))
+         (ramdisk (format nil "~a/ramdisk/" homedir)))
+    (delete-test-system (cat ramdisk "/test-system/"))
+    (create-system ramdisk "test-system")
+    (let ((files (uiop:directory-files (format nil "~a/test-system/" ramdisk))))
+      (format t "files in ~a: ~s~%"  (format nil "~a/test-system/" ramdisk) files)
+      (dolist (file files)
+        (format t "contents of ~a: ~s~%" file (f:file-lines file))))))
 
 (defun main-loop (system-name-buffer current-directory)
   ;; what we want is several fields: system name,
@@ -37,7 +53,7 @@
                    (when (plusp (length system-name-buffer))
                      (setf system-name-buffer (subseq system-name-buffer 0 (1- (length system-name-buffer))))))
                   ((<= (char-code #\space) (char-code input) (char-code #\tilde))
-                   (setf system-name-buffer (concatenate 'string system-name-buffer (coerce (list input) 'string))))))
+                   (setf system-name-buffer (cat system-name-buffer (coerce (list input) 'string))))))
         (return-from main-loop system-name-buffer))
       (draw system-name-buffer))
     (main-loop system-name-buffer current-directory)))
@@ -49,7 +65,8 @@
 
 (defun dev-launch ()
   (f:emacs-eval '(slime-enable-concurrent-hints))
-  (shell-command (format nil "rm -rf ~a/ramdisk/test-system" (namestring (user-homedir-pathname))))
-  (f:with-charms (:timeout 100 :raw-input t :interpret-control-characters t)
-    (draw "test-system")
-    (main-loop "test-system" (format nil "~a/ramdisk/" (namestring (user-homedir-pathname))))))
+  (let ((test-system-location (format nil "~a/ramdisk/" (namestring (user-homedir-pathname)))))
+    (delete-test-system test-system-location)
+    (f:with-charms (:timeout 100 :raw-input t :interpret-control-characters t)
+      (draw "test-system")
+      (main-loop "test-system" test-system-location))))
