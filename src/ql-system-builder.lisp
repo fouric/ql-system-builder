@@ -11,6 +11,7 @@
 (defun gitignore (project-directory)
   (f:write-lines (cat project-directory "/.gitignore") '("*.fasl" "*.elf")))
 
+;; TODO: split into two layers: one that generates the defsystem form as a regular lisp list, and then another that prettily formats that list
 (defun asd (containing-directory name dependencies &key description version author license)
   (flet ((keystr (key str)
            "wraps a given STRing with a KEYword argument"
