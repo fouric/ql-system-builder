@@ -12,6 +12,6 @@
   (sleep .5)
   (emacsclient-eval "(funcall 'slime-repl-eval-string \\\"(in-package :ql-system-builder)\\\")")
   (sleep .5)
-  (emacsclient-eval "(funcall 'slime-repl-eval-string \\\"(dev-launch)\\\")")
+  (emacsclient-eval "(funcall 'slime-repl-eval-string \\\"(ql-system-builder::dev-launch)\\\")")
   (loop (sleep 1)))
 (ql-system-builder-dev)

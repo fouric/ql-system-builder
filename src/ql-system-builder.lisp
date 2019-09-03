@@ -9,9 +9,9 @@
   (ensure-directories-exist (concatenate 'string (namestring containing-directory) "/" (namestring name) "/")))
 
 (defun test-create-system ()
-  (trivial-shell:shell-command "rm -rf /home/fouric/ramdisk/test-system")
-  (create-system "/home/fouric/ramdisk" "test-system")
-  (format t "files in ~a: ~s~%" "/home/fouric/ramdisk/test-system/" (uiop:directory-files "/home/fouric/ramdisk/test-system/")))
+  (shell-command (format nil "rm -rf ~a/ramdisk/test-system" (namestring (user-homedir-pathname))))
+  (create-system (format nil "~a/ramdisk" (namestring (user-homedir-pathname))) "test-system")
+  (format t "files in ~a~a: ~s~%" (namestring (user-homedir-pathname)) "/ramdisk/test-system/" (uiop:directory-files (format nil "~a/ramdisk/test-system/" (namestring (user-homedir-pathname))))))
 
 (defun main-loop (system-name-buffer current-directory)
   ;; what we want is several fields: system name,
@@ -49,7 +49,7 @@
 
 (defun dev-launch ()
   (f:emacs-eval '(slime-enable-concurrent-hints))
-  (trivial-shell:shell-command "rm -rf /home/fouric/ramdisk/test-system")
+  (shell-command (format nil "rm -rf ~a/ramdisk/test-system" (namestring (user-homedir-pathname))))
   (f:with-charms (:timeout 100 :raw-input t :interpret-control-characters t)
     (draw "test-system")
-    (main-loop "test-system" "/home/fouric/ramdisk/")))
+    (main-loop "test-system" (format nil "~a/ramdisk/" (namestring (user-homedir-pathname))))))
