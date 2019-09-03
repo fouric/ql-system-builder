@@ -11,23 +11,60 @@
 (defun gitignore (project-directory)
   (f:write-lines (cat project-directory "/.gitignore") '("*.fasl" "*.elf")))
 
-(defun create-system (containing-directory name)
+(defun asd (containing-directory name dependencies &key description version author license)
+  (flet ((keystr (key str)
+           "wraps a given STRing with a KEYword argument"
+           (cat "  :" key " \"" str "\"")))
+    (let* ((modeline ";;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-")
+           (asd-package (cat ":" name "-asd"))
+           (asd-defpackage (list (cat "(defpackage #" asd-package)
+                                 "  (:use :cl :asdf))"))
+           (asd-inpackage (cat "(in-package " asd-package ")"))
+           (defsystem (remove-if #'null (list (cat "(defsystem " name)
+                                              (keystr "name" name)
+                                              (when description
+                                                (keystr "description" description))
+                                              (when version
+                                                (keystr "version" version))
+                                              (when author
+                                                (keystr "author" author))
+                                              (when license
+                                                (keystr "license" license))
+                                              (let ((str "  :depends-on ("))
+                                                (dolist (dep dependencies)
+                                                  (unless (equal dep (first dependencies))
+                                                    (setf str (cat str " ")))
+                                                  (setf str (cat str ":" (string-downcase (string dep)))))
+                                                (cat str ")"))
+                                              "  :serial t"))))
+      (f:write-lines (format nil "~a/~a/~a.asd" containing-directory name name)
+                     (a:flatten (list modeline
+                                      ""
+                                      asd-defpackage
+                                      ""
+                                      asd-inpackage
+                                      ""
+                                      defsystem
+                                      ")"))))))
+
+(defun create-system (containing-directory name dependencies &key description version)
   (let ((our-directory (cat (namestring containing-directory) "/" (namestring name) "/")))
     (ensure-directories-exist our-directory)
-    (gitignore our-directory)))
+    (gitignore our-directory)
+    (asd containing-directory name dependencies :description description :version version)))
 
 (defun delete-test-system (location)
   (shell-command (format nil "rm -rf ~a" location)))
 
-(defun test-create-system ()
+(defun test-create-system (&key description version)
   (let* ((homedir (namestring (user-homedir-pathname)))
          (ramdisk (format nil "~a/ramdisk/" homedir)))
     (delete-test-system (cat ramdisk "/test-system/"))
-    (create-system ramdisk "test-system")
+    (create-system ramdisk "test-system" '(cl-fouric sdl2) :description description :version version)
     (let ((files (uiop:directory-files (format nil "~a/test-system/" ramdisk))))
       (format t "files in ~a: ~s~%"  (format nil "~a/test-system/" ramdisk) files)
       (dolist (file files)
-        (format t "contents of ~a: ~s~%" file (f:file-lines file))))))
+        (format t "contents of ~a:~%~s~%" file (f:file-lines file))))))
 
 (defun main-loop (system-name-buffer current-directory)
   ;; what we want is several fields: system name,
