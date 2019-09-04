@@ -1,5 +1,7 @@
 (in-package #:ql-system-builder)
 
+;; TODO: allow for source files that are in project root instead of src/
+
 (defun draw (system-name-buffer)
   (f:clear-window)
   (f:write-string-at (format nil "system name: ~a" system-name-buffer) 1 1)
@@ -77,8 +79,9 @@
   ;; offer to create git repo + default commit, .gitignore
   ;; include options for blank curses/charms and sdl2 templates
 
-  (f:update-swank)
-  (f:update-charms-dimensions)
+  ;; i'm not trying to micro-benchmark, only remind myself not to benchmark things like this until the program itself starts to have noticeable performance problems
+  (f:update-swank) ; about 20 μs/call
+  (f:update-charms-dimensions) ; about 50 μs/call
 
   (let* ((input (f:get-char)))
     (when input
@@ -96,7 +99,54 @@
       (draw system-name-buffer))
     (main-loop system-name-buffer current-directory)))
 
-(defun launch (&optional current-directory)
+(defun cli-launch (&optional args)
+  ;; first arg is the name of the binary, like in posix c with argc/argv
+  (unless args
+    (setf args sb-ext:*posix-argv*))
+  #++(format t "count: ~a~%args: ~s~%" (length args) args)
+  (let (flags)
+    (loop :named popper :do
+      (let ((val (pop args)))
+        #++(format t "checking ~s~%" val)
+        (cond
+          ;; check to see if we've reached the end of the argument list
+          ((null val)
+           (return-from popper flags))
+          ((or (string= val "-n") (string= val "--name"))
+           (push (pop args) flags)
+           (push :name flags))
+          ((or (string= val "-d") (string= val "--description"))
+           (push (pop args) flags)
+           (push :description flags))
+          ((or (string= val "-l") (string= val "--license"))
+           (let ((license (pop args)))
+             (push (if (string= license "arr")
+                       "all rights reserved"
+                       license) flags)
+             (push :license flags)))
+          ((or (string= val "-e") (string= val "--dependencies"))
+           (let (deps)
+             (loop :named deps :do
+               ;; try to get the next arg provided on the command-line
+               (let ((dep (pop args)))
+                 ;; did we actually get one or is this the end of the line
+                 (if dep
+                     ;; if we got one, and it starts with a dash, it's probably another option
+                     (if (not (char= #\- (schar dep 0)))
+                         (push dep deps)
+                         (return-from deps))
+                     (return-from deps))))
+             (push (loop :for dep :in deps :collect (intern (string-upcase dep) :keyword)) flags)
+             (push :dependencies flags)))
+          ((or (string= val "-a") (string= val "--author"))
+           (push (pop args) flags)
+           (push :author flags))
+          (t
+           (format t "warning: unbound argument: ~a~%" val)))))
+    #++(print flags)
+    flags))
+
+(defun interactive-launch (&optional current-directory)
   (f:with-charms (:timeout 100 :raw-input t :interpret-control-characters t)
     (draw "")
     (main-loop "" current-directory)))

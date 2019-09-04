@@ -2,5 +2,7 @@
   (:use #:cl #:trivial-shell)
   (:local-nicknames (:a :alexandria) (:f :fouric))
   (:export
-   #:launch
+   #:interactive-launch
+   #:cli-launch
+   #:dev-launch
    ))
