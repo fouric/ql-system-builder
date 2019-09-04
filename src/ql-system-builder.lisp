@@ -1,10 +1,33 @@
 (in-package #:ql-system-builder)
 
 ;; TODO: allow for source files that are in project root instead of src/
+;; TODO: move draw-box into cl-fouric or something and add :fancy flag that uses non-ASCII characters
+
+(defun draw-box (x y w h)
+  ;; usually takes no more than a few hundred microseconds per call, although the complexity does scale with the box size
+  ;; make a string of entirely the horizontal line character, w units long
+  (let ((horizontal (make-string w :initial-element #\BOX_DRAWINGS_LIGHT_HORIZONTAL)))
+    ;; set the first and last elements to be the upper left and right corners, respectively
+    (setf (aref horizontal 0) #\box_drawings_light_down_and_right
+          (aref horizontal (1- w)) #\box_drawings_light_down_and_left)
+    ;; draw the top of the box
+    (f:write-string-at horizontal x (+ y 0))
+    ;; then set the first and last elements to be the bottom characters
+    (setf (aref horizontal 0) #\box_drawings_light_up_and_right
+          (aref horizontal (1- w)) #\box_drawings_light_up_and_left)
+    ;; and draw
+    (f:write-string-at horizontal x (+ y h -1)))
+  ;; we don't have a way to draw vertical lines, so we'll just loop
+  (dotimes (i (- h 2))
+    (f:write-string-at "│" (+ x 0) (+ y i 1))
+    (f:write-string-at "│" (+ x w -1) (+ y i 1))))
 
 (defun draw (system-name-buffer)
   (f:clear-window)
-  (f:write-string-at (format nil "system name: ~a" system-name-buffer) 1 1)
+  (let ((str (format nil "system name: ~a" system-name-buffer)))
+    (draw-box 0 0 (+ 4 (length str)) 3)
+    (f:write-string-at str 2 1))
+  ;;(time (dotimes (i 1000) (draw-box 0 0 100 60)))
   (f:refresh-window))
 
 (defun cat (&rest strings)
